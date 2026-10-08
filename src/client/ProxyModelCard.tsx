@@ -15,7 +15,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {
   FieldWrite, ProxyModelRow, ProxyModelScope, ProxyModelSnapshot, TestResult,
@@ -452,17 +452,47 @@ function CardBody(props: Required<ProxyModelCardInjected>): ReactNode {
   )
 }
 
+/** The render context the dsh 0.2.0 plugin-manager passes through the slot
+ * outlet. It mounts this one card component at three places per plugin: the
+ * list row and the detail description line both render {view:'summary'} (the
+ * output lands inside the host's own title/description styling), while the
+ * detail config section renders {view:'page', form, renderComponents}. Older
+ * hosts (0.1.7) render the card standalone with no view prop at all. */
+interface ViewContext {
+  view?: 'summary' | 'page'
+}
+
 /**
- * The 模型代理 page body: a header naming the plugin over a line describing
- * what its settings govern, disclosing the configurable items in place. It
- * opens expanded because the Plugins page already spent one click on the tab.
+ * The 模型代理 card. Dispatches on the slot render context:
+ * - `summary` — a compact one-line blurb (no form, no interactive state); the
+ *   host already draws the title around it, so emitting the full form here
+ *   spread the config across the plugin list and duplicated it on the detail
+ *   page (v1.5.5 regression on dsh 0.2.0).
+ * - `page` — the configuration form only (the detail header is the host's).
+ * - no `view` (dsh 0.1.7 standalone) — the legacy self-contained card with its
+ *   own header and expand/collapse chevron.
  * Renders nothing (returns null) until the slot outlet supplies the inject
  * face.
  */
 export function ProxyModelCard(props: ProxyModelCardProps): ReactNode {
+  const { scope, useSnapshot, t, view } = props as ProxyModelCardProps & ViewContext
+  if (scope === undefined || useSnapshot === undefined || t === undefined) return null
+  if (view === 'summary') {
+    return <span data-testid="proxy-model-summary">{t('description')}</span>
+  }
+  if (view === 'page') {
+    return <CardBody scope={scope} useSnapshot={useSnapshot} t={t} />
+  }
+  return <StandaloneCard scope={scope} useSnapshot={useSnapshot} t={t} />
+}
+
+/** The legacy dsh 0.1.7 rendering: a self-contained card with a header naming
+ * the plugin over a line describing what its settings govern, disclosing the
+ * configurable items in place. It opens expanded because the Plugins page
+ * already spent one click on the tab. */
+function StandaloneCard(props: Required<ProxyModelCardInjected>): ReactNode {
   const { scope, useSnapshot, t } = props
   const [open, setOpen] = useState(true)
-  if (scope === undefined || useSnapshot === undefined || t === undefined) return null
   return (
     <li className={styles.card}>
       <button
@@ -477,7 +507,7 @@ export function ProxyModelCard(props: ProxyModelCardProps): ReactNode {
           <span className={styles.name}>{t('title')}</span>
           <span className={styles.description}>{t('description')}</span>
         </span>
-        <IconChevronDownOutline14 className={styles.chevron + (open ? ` ${styles.chevronOpen}` : '')} />
+        <IconChevronDownOutlineRegular className={styles.chevron + (open ? ` ${styles.chevronOpen}` : '')} />
       </button>
       {open && <CardBody scope={scope} useSnapshot={useSnapshot} t={t} />}
     </li>

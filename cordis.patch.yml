@@ -30,13 +30,3 @@
         #   - 'deepseek-v4-flash/deepseek-v4-flash'   # b.ai provider
         retries: 3
         retryIntervalMs: 1000
-- insert:
-    - id: llm-proxy
-      name: '@superfish058/dsh-llm-proxy'
-      config:
-        proxyHost: '127.0.0.1'
-        proxyPort: 7897
-        # proxiedModels:
-        #   - 'deepseek-v4-flash/deepseek-v4-flash'   # b.ai provider
-        retries: 3
-        retryIntervalMs: 1000

@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.5.6 (unreleased)
+
+- **适配 dsh 0.2.0 插件卡片的 view 渲染契约（修复「插件列表直接铺开完整配置、详情页出现 2 个重复配置卡」）**。`@deepseek-ai/dsh-client-ui-plugin-manager` 会把同一个卡片组件在每款插件上挂载三处：列表行与详情描述行都以 `{view:'summary'}` 渲染（输出落在宿主自己的标题/描述样式内），详情配置区以 `{view:'page'}` 渲染。此前卡片不读 `view`、所有渲染点都输出完整配置表单，导致列表行被配置界面铺满、详情页双渲染。现在卡片按 `view` 分支：`summary` 输出一行简介（无表单、无内部展开状态）；`page` 只渲染配置表单（详情页头部由宿主绘制）；无 `view`（dsh 0.1.7 独立渲染）保持原自包含卡片（标题 + 折叠 chevron + 表单）不变。座位仍是单一 `plugins.item`，无注册面变化。
+
+## v1.5.5 (unreleased)
+
+- **回滚收敛：客户端恢复 v1.5.0 原版 + 仅保留两处最小修补**。v1.5.2~v1.5.4 引入的「三座位注册 / trySeat 降级 / Record 放宽」多座位适配（`plugins.bundle.config` keyed、`web-ui.plugin.item` family、诊断日志）整体撤销，`src/client/index.ts` 与 `ProxyModelCard.tsx` 恢复 origin/master 单座位 `plugins.item` 原版，待宿主 0.2.0 卡片契约在真实环境验证后再议适配。保留的两处修补：
+  - `cordis.patch.yml` 去重（v1.5.1 的修复，消除 `duplicate loader entry id "llm-proxy"` 启动报错）。
+  - `ProxyModelCard` 折叠图标 `IconChevronDownOutline14` → `IconChevronDownOutlineRegular`（dsh 0.2.0 primitives 删除了数字尺寸图标，旧名运行时 undefined 导致卡片渲染抛错）；配套 `@deepseek-ai/dsh-client-ui-primitives` devDep 保持在 `^0.2.0-rc.2`（仅构建期类型解析需要，Regular 图标名从 0.2.0 起才存在）。
+
+## v1.5.2 (unreleased)
+
+- **适配 dsh 0.2.0 正式插件卡片座位（修复「设置里没有插件入口、卡片不出」）**：0.2.0 把插件页搬到主界面（`@deepseek-ai/dsh-client-ui-plugin-manager` 注入 `main`），bundle 配置卡片座位为 `plugins.bundle.config`（keyed，**key = 插件包名** `@superfish058/dsh-llm-proxy`）。同时兼容替换型 Web UI（如 `@linxin666/dsh-web-all`）：其 `dsh-web-settings` 组加载期间（探测 `webUiSettings` 服务）卡片改挂家庭座位 `web-ui.plugin.item`（list，id/order/label），并在每次 `slots/changed` 时重判、先 dispose 后重挂，保证卡片从不同时出现在两个座位。注册仍包在 `configForms.whileServed(['llm-proxy'])` 门控内。v1.5.1 曾适配的 `settings.plugin.item` 是 alpha.1 的过渡座位（alpha.2 已删），正式版不适用。
+
+## v1.5.1 (unreleased)
+
+- **修复 v1.5.0 cordis.patch.yml 重复 insert 块**（启动报 `duplicate loader entry id "llm-proxy"`）：文件里同一 `insert` 块被意外写了两次，宿主组合 profile 时出现两条同 id 行，加载器直接抛错。纯删除，无值变更。
+- **适配 dsh 0.2.0 的 Plugins 页槽位改名**：卡片槽位由 `plugins.item`（list，`id`/`order`/`label`）改回 `settings.plugin.item`（keyed，`key: 'llm-proxy'`），卡片在 `configForms.whileServed(['llm-proxy'])` 下注册不变。不改则宿主侧一切正常（设置文档照常 serve、bridge 照常挂载），但设置页只显示插件标题、不出卡片。
+
 ## v1.5.0 (2026-09-28)
 
 - **适配 dsh 0.1.7 的设置模型（重要，修复「renderer boot failed」）**。0.1.7 把客户端设置服务从 `settingsScope` 改名为 `configForms`，并按 **Loader entry id**（本插件即 `llm-proxy`）寻址设置文档；旧代码硬 `inject` 已不存在的服务名，cordis fiber 永远停在 pending，启动审计因此只能报「The client Loader did not provide an error message. RendererStartupFailure」。现在客户端改为 `ctx.inject(['configForms'], …)` 动态等待该服务——服务缺失时插件照常启动、只是不显示设置页，未来再改名也不会再把启动拖垮。

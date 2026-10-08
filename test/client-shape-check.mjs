@@ -9,6 +9,8 @@ const checks = {
   'plugins.item registered': s.includes('plugins.item'),
   'page id llm-proxy': s.includes('"llm-proxy"'),
   'configForms bound': s.includes('configForms'),
+  '0.2.0 icon name': s.includes('IconChevronDownOutlineRegular'),
+  '0.1.x icon name gone': !s.includes('IconChevronDownOutline14'),
   'bridge prefix': s.includes('/api/dsh-llm-proxy/settings'),
   'locale zh keys': s.includes('模型代理'),
 }
